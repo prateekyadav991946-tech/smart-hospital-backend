@@ -1,0 +1,12 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
+
+# H2 database
+data/
+
+# macOS
+.DS_Store
