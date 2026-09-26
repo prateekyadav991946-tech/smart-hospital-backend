@@ -18,6 +18,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -34,6 +40,12 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
+
+                // =====================================================
+                // CORS
+                // =====================================================
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // =====================================================
                 // CSRF
@@ -59,6 +71,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // -------------------------------------------------
+                        // CORS PREFLIGHT
+                        // -------------------------------------------------
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+
+                        // -------------------------------------------------
                         // PUBLIC
                         // -------------------------------------------------
 
@@ -79,14 +98,12 @@ public class SecurityConfig {
                         // PATIENT - OWN DATA ONLY
                         // =================================================
 
-                        // Own profile
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/patients/me"
                         )
                         .hasRole("PATIENT")
 
-                        // Own medical history
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/patients/me/medical-history"
@@ -97,7 +114,6 @@ public class SecurityConfig {
                         // STAFF - PATIENT DATA
                         // -------------------------------------------------
 
-                        // Staff can view patient list/details/history
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/patients/*/medical-history"
@@ -118,7 +134,6 @@ public class SecurityConfig {
                                 "RECEPTIONIST"
                         )
 
-                        // Create patient
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/patients/**"
@@ -128,7 +143,6 @@ public class SecurityConfig {
                                 "RECEPTIONIST"
                         )
 
-                        // Update patient
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/patients/**"
@@ -138,7 +152,6 @@ public class SecurityConfig {
                                 "RECEPTIONIST"
                         )
 
-                        // Delete patient
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/patients/**"
@@ -149,7 +162,6 @@ public class SecurityConfig {
                         // DOCTORS
                         // =================================================
 
-                        // Everyone relevant can view doctor list
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/doctors/**"
@@ -161,21 +173,18 @@ public class SecurityConfig {
                                 "PATIENT"
                         )
 
-                        // Only Admin can create
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/doctors/**"
                         )
                         .hasRole("ADMIN")
 
-                        // Only Admin can update
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/doctors/**"
                         )
                         .hasRole("ADMIN")
 
-                        // Only Admin can delete
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/doctors/**"
@@ -186,14 +195,12 @@ public class SecurityConfig {
                         // APPOINTMENTS
                         // =================================================
 
-                        // Patient can book his/her own appointment
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/appointments/my"
                         )
                         .hasRole("PATIENT")
 
-                        // Hospital staff
                         .requestMatchers(
                                 "/api/appointments/**"
                         )
@@ -256,7 +263,6 @@ public class SecurityConfig {
                         // LAB
                         // =================================================
 
-                        // Doctor/Admin can order lab test
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/lab-tests"
@@ -266,7 +272,6 @@ public class SecurityConfig {
                                 "DOCTOR"
                         )
 
-                        // Admin / Doctor / Lab can view lab information
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/lab-tests/**"
@@ -277,7 +282,6 @@ public class SecurityConfig {
                                 "LAB_TECHNICIAN"
                         )
 
-                        // Lab processing
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/lab-tests/*/start",
@@ -318,12 +322,55 @@ public class SecurityConfig {
     }
 
     // =========================================================
+    // CORS CONFIGURATION
+    // =========================================================
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOriginPatterns(
+                List.of("*")
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
+
+        configuration.setExposedHeaders(
+                List.of("Authorization")
+        );
+
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
+        return source;
+    }
+
+    // =========================================================
     // PASSWORD ENCODER
     // =========================================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
